@@ -1,0 +1,54 @@
+import os
+import ast
+
+def get_functions_from_file(file_path):
+    """Extract function names from a Python file."""
+    functions = []
+    try:
+        with open(file_path, "r", encoding="utf-8") as file:
+            tree = ast.parse(file.read(), filename=file_path)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef):
+                    functions.append(node.name)
+    except Exception as e:
+        functions.append(f"Error reading file: {str(e)}")
+    return functions
+
+def scan_folder(folder_path, indent=0):
+    """Recursively scans a folder and collects file and function information."""
+    result = ""
+    try:
+        for item in sorted(os.listdir(folder_path)):
+            item_path = os.path.join(folder_path, item)
+            prefix = "  " * indent + "|-- "  # Tree-like structure
+
+            if os.path.isdir(item_path):
+                result += f"{prefix}[Folder] {item}\n"
+                result += scan_folder(item_path, indent + 1)
+            elif os.path.isfile(item_path):
+                result += f"{prefix}[File] {item}\n"
+                if item.endswith(".py"):
+                    functions = get_functions_from_file(item_path)
+                    for func in functions:
+                        result += f"  {'  ' * indent}|-- (Function) {func}\n"
+    except Exception as e:
+        result += f"Error scanning folder: {str(e)}\n"
+    return result
+
+def main():
+    folder_to_scan = input("Enter the folder path to scan: ").strip()
+    if not os.path.exists(folder_to_scan):
+        print("Invalid folder path.")
+        return
+
+    tree_structure = f"Folder Scan Report for: {folder_to_scan}\n\n"
+    tree_structure += scan_folder(folder_to_scan)
+
+    output_file = os.path.join(folder_to_scan, "folder_structure.txt")
+    with open(output_file, "w", encoding="utf-8") as file:
+        file.write(tree_structure)
+
+    print(f"Scan completed. Tree structure saved in: {output_file}")
+
+if __name__ == "__main__":
+    main()
